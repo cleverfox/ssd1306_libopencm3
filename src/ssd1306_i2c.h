@@ -30,6 +30,7 @@
 #define SSD1306_LIBRARY_SSD1306_I2C_H
 
 #include <libopencm3/stm32/i2c.h>
+#include <stddef.h>
 
 #define _swap(a, b) { uint8_t t = a; a = b; b = t; }
 #define _bitSet(x) (1 << (x))
@@ -51,6 +52,8 @@
 #define SSD1306_SET_INVERSE     0xA7  // Inverse display
 #define SSD1306_SET_DISPLAY_OFF 0xAE  // Display OFF (sleep mode)
 #define SSD1306_SET_DISPLAY_ON  0xAF  // Display ON in normal mode
+#define SSD1306_SET_VMIRROR_ON  0xC8  // mirror vertically
+#define SSD1306_SET_HMIRROR_ON  0xA1  // mirror horizonally
 
 #define _IF_SB(i2c) ((I2C_SR1(i2c) & I2C_SR1_SB) == 0)
 #define _IF_BTF(i2c) ((I2C_SR1(i2c) & I2C_SR1_BTF) == 0)
@@ -70,6 +73,14 @@ typedef enum SSD1306_AddressingMode {
   INVALID     = 0b11  // You MUST NOT USE IT
 } MODE;
 
+struct lcd {
+  uint32_t i2c_oled; //= I2C2;
+  uint8_t oled_address; // = DEFAULT_7bit_OLED_SLAVE_ADDRESS;
+  uint8_t width; // = 128;
+  uint8_t height; // = 32;
+  uint16_t sbl; //screenBufferLength; // = DEFAULTBUFFERLENGTH;
+};
+
 extern MODE AddressingMode;
 
 typedef enum SSD1306_COLOR { white = 0, black = 1} Color;
@@ -77,42 +88,43 @@ typedef enum SSD1306_WRAP {nowrap, wrapDisplay, wrapCoord} WrapType;
 
 extern uint8_t screenRAM[];
 
-void ssd1306_init(uint32_t i2c, uint8_t address, uint8_t width, uint8_t height);
+void ssd1306_init(struct lcd *screen, uint32_t i2c, uint8_t address, uint8_t width, uint8_t height);
 
 // tools
 
 #define DATAONLY (uint8_t)0b01000000
 #define COMMAND  (uint8_t)0b00000000
 
-void ssd1306_send(uint8_t spec);
-void ssd1306_send_data(uint8_t spec, uint8_t data);
+void ssd1306_send(struct lcd *screen, uint8_t spec);
+void ssd1306_send_data(struct lcd *screen, uint8_t spec, uint8_t data);
+void ssd1306_command(struct lcd *screen, uint8_t *data, uint8_t datalen);
 
 // hardware commands
-void ssd1306_setMemoryAddressingMode(MODE mode);
-void ssd1306_setColumnAddressScope(uint8_t lower, uint8_t upper);
-void ssd1306_setPageAddressScope(uint8_t lower, uint8_t upper);
-void ssd1306_setPageStartAddressForPageAddressingMode(uint8_t pageNum);
-void ssd1306_setDisplayStartLine(uint8_t startLine);
-void ssd1306_setContrast(uint8_t value);
-void ssd1306_setPrecharge(uint8_t value);
-void ssd1306_setDisplayOn(bool resume); // switch ON/OFF MCU of display
-void ssd1306_setInverse(bool inverse);
-void ssd1306_chargePump(bool chargePump);
-void ssd1306_switchOLEDOn(bool goOn); //switch ON/OFF power switch of the OLED panel
-void ssd1306_setDisplayOffset(uint8_t verticalShift);
-void ssd1306_adjustVcomDeselectLevel(uint8_t value);
-void ssd1306_setOscillatorFrequency(uint8_t value); // you SHOULD use default value (0x80)
-void ssd1306_setMultiplexRatio(uint8_t ratio);
-void ssd1306_setCOMPinsHardwareConfiguration(uint8_t);
-void ssd1306_setPage(uint8_t);
-void ssd1306_setColumn(uint8_t);
+void ssd1306_setMemoryAddressingMode(struct lcd *screen, MODE mode);
+void ssd1306_setColumnAddressScope(struct lcd *screen, uint8_t lower, uint8_t upper);
+void ssd1306_setPageAddressScope(struct lcd *screen, uint8_t lower, uint8_t upper);
+void ssd1306_setPageStartAddressForPageAddressingMode(struct lcd *screen, uint8_t pageNum);
+void ssd1306_setDisplayStartLine(struct lcd *screen, uint8_t startLine);
+void ssd1306_setContrast(struct lcd *screen, uint8_t value);
+void ssd1306_setPrecharge(struct lcd *screen, uint8_t value);
+void ssd1306_setDisplayOn(struct lcd *screen, bool resume); // switch ON/OFF MCU of display
+void ssd1306_setInverse(struct lcd *screen, bool inverse);
+void ssd1306_chargePump(struct lcd *screen, bool chargePump);
+void ssd1306_switchOLEDOn(struct lcd *screen, bool goOn); //switch ON/OFF power switch of the OLED panel
+void ssd1306_setDisplayOffset(struct lcd *screen, uint8_t verticalShift);
+void ssd1306_adjustVcomDeselectLevel(struct lcd *screen, uint8_t value);
+void ssd1306_setOscillatorFrequency(struct lcd *screen, uint8_t value); // you SHOULD use default value (0x80)
+void ssd1306_setMultiplexRatio(struct lcd *screen, uint8_t ratio);
+void ssd1306_setCOMPinsHardwareConfiguration(struct lcd *screen, uint8_t);
+void ssd1306_setPage(struct lcd *screen, uint8_t);
+void ssd1306_setColumn(struct lcd *screen, uint8_t);
 
 // paint commands
-void ssd1306_clear(void);
-void ssd1306_refresh(void);
-void ssd1306_drawPixel(uint8_t x, uint8_t y, Color c, bool directNoRAM);
-void ssd1306_drawVPattern(uint8_t x, int8_t y, uint8_t pattern);
-void ssd1306_drawWCharStr(uint8_t x, int8_t y, Color color, WrapType wrType, wchar_t *str);
+void ssd1306_clear(struct lcd *screen);
+void ssd1306_refresh(struct lcd *screen);
+void ssd1306_drawPixel(struct lcd *screen, uint8_t x, uint8_t y, Color c, bool directNoRAM);
+void ssd1306_drawVPattern(struct lcd *screen, uint8_t x, int8_t y, uint8_t pattern);
+void ssd1306_drawWCharStr(struct lcd *screen, uint8_t x, int8_t y, Color color, WrapType wrType, wchar_t *str);
 
 
 

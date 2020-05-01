@@ -34,7 +34,7 @@
 
 #include <ssd1306_i2c.h>
 
-void clock_setup(void) {
+static void clock_setup(void) {
   rcc_clock_setup_in_hse_12mhz_out_72mhz();
 
   /* Enable GPIOs clock. */
@@ -104,7 +104,7 @@ void exti9_5_isr(void) {
   exti_reset_request(EXTI8); // we should clear flag manually
 }
 
-void board_setup(void) {
+static void board_setup(void) {
   // Debug setting for rotary encoder EC11 on (PA8, PA9) for make simple command
   gpio_set_mode(GPIOA, GPIO_MODE_INPUT,
                 GPIO_CNF_INPUT_FLOAT,
@@ -129,7 +129,14 @@ int main(void) {
   i2c_setup();
   board_setup();
 
-  ssd1306_init(I2C2, DEFAULT_7bit_OLED_SLAVE_ADDRESS, 128, 32);
+  struct lcd mylcd;
+  ssd1306_init(&mylcd, I2C2, DEFAULT_7bit_OLED_SLAVE_ADDRESS, 128, 32);
+  ssd1306_send_data(&mylcd, COMMAND, 0xc8); //updown flip
+  ssd1306_send_data(&mylcd, COMMAND, 0xA1); //mirror horizonally
+  /* //interlace mode for some 128x64 disaplys
+  uint8_t rlcdcfg[]={0xda,0x10};
+  ssd1306_command(&rlcd, rlcdcfg, 2);
+   */
 
   step = 1;
   int16_t y = 0;
@@ -138,14 +145,14 @@ int main(void) {
       if (step!=0) {
         for (int i =0; i<8; i++) {
           y += step;
-          ssd1306_clear();
-          ssd1306_drawWCharStr(0, y, white, wrapDisplay, L"Привет! Это длинный текст c цифрой 01234567890 и " \
+          ssd1306_clear(&mylcd);
+          ssd1306_drawWCharStr(&mylcd, 0, y, white, wrapDisplay, L"Привет! Это длинный текст c цифрой 01234567890 и " \
           "cимволами .!№;%:?*()), специально, чтобы создать проблемы для отрисовки.\n"  \
           "There is a lot text with ENGLISH or latin symbols!\n\n"\
           "Однажды в далёкой-далёкой галактике LOREM IPSUM\n\n "
               //         "\"Sed ut perspiciatis unde omnis iste natus error sit voluptatem accusantium doloremque laudantium, totam rem aperiam, eaque ipsa quae ab illo inventore veritatis et quasi architecto beatae vitae dicta sunt explicabo. Nemo enim ipsam voluptatem quia voluptas sit aspernatur aut odit aut fugit, sed quia consequuntur magni dolores eos qui ratione voluptatem sequi nesciunt. Neque porro quisquam est, qui dolorem ipsum quia dolor sit amet, consectetur, adipisci velit, sed quia non numquam eius modi tempora incidunt ut labore et dolore magnam aliquam quaerat voluptatem. Ut enim ad minima veniam, quis nostrum exercitationem ullam corporis suscipit laboriosam, nisi ut aliquid ex ea commodi consequatur? Quis autem vel eum iure reprehenderit qui in ea voluptate velit esse quam nihil molestiae consequatur, vel illum qui dolorem eum fugiat quo voluptas nulla pariatur?\""
           );
-          ssd1306_refresh();
+          ssd1306_refresh(&mylcd);
           for (uint32_t loop = 0; loop < 1000000; ++loop) {
             __asm__("nop");
         }
